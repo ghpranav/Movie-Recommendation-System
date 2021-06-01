@@ -211,8 +211,8 @@ def create_app(spark_context, dataset_path):
     app = Flask(__name__)
     app.secret_key = "^A%DJAJU^JJ123"
     app.config['MYSQL_HOST'] = 'localhost'
-    app.config['MYSQL_USER'] = 'root'
-    app.config['MYSQL_PASSWORD'] = ''
+    app.config['MYSQL_USER'] = 'ghpranav'
+    app.config['MYSQL_PASSWORD'] = 'pranav123'
     app.config['MYSQL_DB']= 'flaskapp'
     app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
     global mysql

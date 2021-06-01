@@ -40,8 +40,8 @@ class RecommendationEngine:
         """
         logger.info("Counting movie ratings...")
         movie_ID_with_ratings_RDD = self.ratings_RDD.map(lambda x: (x[1], x[2])).groupByKey()
-        movie_ID_with_avg_ratings_RDD = movie_ID_with_ratings_RDD.map(get_counts_and_averages)
-        self.movies_rating_counts_RDD = movie_ID_with_avg_ratings_RDD.map(lambda x: (x[0], x[1][0]))
+        self.movie_ID_with_avg_ratings_RDD = movie_ID_with_ratings_RDD.map(get_counts_and_averages)
+        self.movies_rating_counts_RDD = self.movie_ID_with_avg_ratings_RDD.map(lambda x: (x[0], x[1][0]))
 
 
     def __train_model(self):
@@ -52,6 +52,11 @@ class RecommendationEngine:
         self.model = ALS.train(self.ratings_RDD, self.rank, seed=self.seed,
                                iterations=self.iterations, lambda_=self.regularization_parameter)
         logger.info("ALS model built!")
+        self.model.save(self.sc, os.path.join(self.dataset_path, 'als_model'))
+        test = self.model.productFeatures().join(self.movies_titles_RDD)\
+                                .join(self.movie_ID_with_avg_ratings_RDD)
+        test.saveAsPickleFile(os.path.join(self.dataset_path, 'item_based_features'))
+        logger.info("Model saved!")
         print("Training model for rank = "+str(self.rank)+" iterations ="+str(self.iterations)+" regularization parameter "+str(self.regularization_parameter)+" "+str( time.time()-start))
 
 
@@ -161,12 +166,14 @@ class RecommendationEngine:
         logger.info("Starting up the Recommendation Engine: ")
 
         self.sc = sc
+        self.dataset_path = dataset_path
         
         # Load item ratings data for later use
         logger.info("Loading Model Features...")
         features_file_path = os.path.join(dataset_path,'item_based_features')
         
         self.product_feature_RDD = self.sc.pickleFile(features_file_path)
+        self.model = MatrixFactorizationModel.load(self.sc, os.path.join(dataset_path, 'als_model'))
 
         
         logger.info("Loading Ratings data...")
@@ -201,4 +208,5 @@ class RecommendationEngine:
         self.seed = 5
         self.iterations = 12
         self.regularization_parameter = 0.1
-        self.__train_model() 
+        # self.__train_model() 
+        
